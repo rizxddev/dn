@@ -285,31 +285,27 @@
             terminal.innerHTML = `> [${time}] ${text}<br>` + terminal.innerHTML;
         }
 
-        async function forceDownload(url, title) {
-            playClick();
-            addLog("PULLING BLOB DATA STREAM...");
-            
-            try {
-                const response = await fetch(url);
-                const blob = await response.blob();
-                const blobUrl = window.URL.createObjectURL(blob);
-                
-                const a = document.createElement('a');
-                a.style.display = 'none';
-                a.href = blobUrl;
-                
-                const safeName = title.replace(/[^a-z0-9]/gi, '_').toLowerCase().substring(0, 50);
-                a.download = `nexdown_${safeName}.mp4`;
-                
-                document.body.appendChild(a);
-                a.click();
-                window.URL.revokeObjectURL(blobUrl);
-                addLog("DOWNLOAD STREAM SUCCESS");
-            } catch (err) {
-                addLog("CORS BLOCK DETECTED: OPENING DIRECT LINK");
-                window.open(url, '_blank');
-            }
-        }
+        function forceDownload(url, title) {
+    playClick();
+    addLog("ROUTING THROUGH QUANTUM PROXY...");
+
+    // Bersihkan nama file agar tidak error
+    const safeName = title.replace(/[^a-z0-9]/gi, '_').toLowerCase().substring(0, 50);
+    
+    // Buat URL proxy
+    // Kita arahkan browser ke api proxy, browser akan otomatis mendownload karena header 'attachment'
+    const proxyUrl = `/api/proxy?url=${encodeURIComponent(url)}&filename=${encodeURIComponent(safeName)}`;
+    
+    addLog("INJECTING STREAM TO LOCAL DISK...");
+    
+    // Gunakan window.location agar browser memicu dialog "Save As"
+    window.location.href = proxyUrl;
+
+    setTimeout(() => {
+        addLog("DOWNLOAD INITIALIZED SUCCESSFULLY");
+    }, 2000);
+}
+
 
         async function handleDownload() {
             playClick();
