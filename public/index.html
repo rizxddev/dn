@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>NEXDOWN // ALL IN ONE DOWNLOADER </title>
+    <title>NEXDOWN // ALL IN ONE DOWNLOADER</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -286,28 +286,41 @@
         }
 
         function forceDownload(url, title) {
+    if (!url || url === "#") {
+        addLog("ERROR: INVALID DATA STREAM");
+        return;
+    }
+
     playClick();
     addLog("ROUTING THROUGH QUANTUM PROXY...");
 
-    // Bersihkan nama file agar tidak error
+    // 1. Sanitasi judul lebih ketat untuk menghindari error URL
+    // Menghapus karakter non-alphanumeric agar filename aman bagi OS (Windows/Linux/Mac)
     const safeName = title.replace(/[^a-z0-9]/gi, '_').toLowerCase().substring(0, 50);
     
-    // Buat URL proxy
-    // Kita arahkan browser ke api proxy, browser akan otomatis mendownload karena header 'attachment'
-    const proxyUrl = `/api/proxy?url=${encodeURIComponent(url)}&filename=${encodeURIComponent(safeName)}`;
+    // 2. Gunakan URLSearchParams untuk encoding yang lebih rapi
+    const params = new URLSearchParams({
+        url: url,
+        filename: safeName
+    });
+    
+    const proxyUrl = `/api/proxy?${params.toString()}`;
     
     addLog("INJECTING STREAM TO LOCAL DISK...");
     
-    // Gunakan window.location agar browser memicu dialog "Save As"
+    // 3. Trigger Download
+    // Menggunakan window.location.href adalah cara tercepat untuk bypass CORS via proxy
     window.location.href = proxyUrl;
 
+    // Log sukses setelah jeda singkat
     setTimeout(() => {
-        addLog("DOWNLOAD INITIALIZED SUCCESSFULLY");
-    }, 2000);
+        addLog("PROTOCOL: DOWNLOAD_STARTED_SUCCESSFULLY");
+    }, 1500);
 }
 
 
-        async function handleDownload() {
+
+                async function handleDownload() {
             playClick();
             const url = document.getElementById('urlInput').value;
             const format = document.getElementById('formatSelect').value;
@@ -344,6 +357,10 @@
                 if (data.success) {
                     addLog("DATA RETRIEVED: RENDERING UI COMPONENTS");
                     data.results.forEach(item => {
+                        // FIX: Ambil URL dari properti 'url' (YT) atau 'video_file_url' (Sosmed lain)
+                        const downloadLink = item.url || item.video_file_url;
+                        const cleanTitle = (item.title || 'video').replace(/'/g, "");
+
                         resultArea.innerHTML += `
                             <div class="cyber-box p-6 animate__animated animate__fadeInUp relative overflow-hidden group">
                                 <div class="absolute top-0 right-0 p-2 bg-[var(--neon)] text-black font-cyber text-[8px]">DOWNLOAD READY</div>
@@ -358,7 +375,7 @@
                                             ${item.title || 'UNKNOWN MEDIA OBJECT'}
                                         </h3>
                                         
-                                        <button onclick="forceDownload('${item.url}', '${item.title || 'video'}')" 
+                                        <button onclick="forceDownload('${downloadLink}', '${cleanTitle}')" 
                                            onmouseenter="playHover()"
                                            class="inline-block w-full border border-[var(--neon)] bg-[var(--neon)]/5 text-[var(--neon)] hover:bg-[var(--neon)] hover:text-black py-4 text-center font-cyber text-[9px] tracking-[0.4em] transition-all">
                                            START DOWNLOAD
@@ -375,12 +392,14 @@
             } catch (err) {
                 addLog("ERROR: SERVER RESPONSE TIMEOUT");
             } finally {
+                clearInterval(logInt); // Hentikan interval log jika selesai
                 loading.classList.add('hidden');
                 btn.disabled = false;
                 btn.innerHTML = `START <i data-lucide="zap" class="ml-4 w-4 h-4 fill-current"></i>`;
                 lucide.createIcons();
             }
         }
+
     </script>
 </body>
 </html>
